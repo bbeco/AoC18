@@ -3,7 +3,6 @@ extern crate lazy_static;
 extern crate regex;
 
 use regex::Regex;
-use std::cmp;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
@@ -22,11 +21,11 @@ fn load_input() -> std::io::Result<Vec<String>> {
 
 struct Patch {
     id: u16,
-    corners: [[u32; 2]; 2],
+    corners: [[usize; 2]; 2],
 }
 
 impl Patch {
-    fn new(p_id: u16, x: u32, y: u32, w: u32, h: u32) -> Self {
+    fn new(p_id: u16, x: usize, y: usize, w: usize, h: usize) -> Self {
         Patch {
             id: p_id,
             corners: [[x, y], [x + w, y + h]],
@@ -36,40 +35,51 @@ impl Patch {
         lazy_static! {
             static ref RE: Regex = Regex::new(r"^#(\d+)\s+@\s(\d+),(\d+):\s+(\d+)x(\d+)$").unwrap();
         }
-        let re = Regex::new(r"^#(\d+)\s+@\s(\d+),(\d+):\s+(\d+)x(\d+)$").unwrap();
-        let caps = re.captures(s).unwrap();
+        let caps = RE.captures(s).unwrap();
 
-        let x = caps.get(2).unwrap().as_str().parse::<u32>().unwrap();
-        let y = caps.get(3).unwrap().as_str().parse::<u32>().unwrap();
-        let w = caps.get(4).unwrap().as_str().parse::<u32>().unwrap();
-        let h = caps.get(5).unwrap().as_str().parse::<u32>().unwrap();
+        let id = caps.get(1).unwrap().as_str().parse::<u16>().unwrap();
+        let x = caps.get(2).unwrap().as_str().parse::<usize>().unwrap();
+        let y = caps.get(3).unwrap().as_str().parse::<usize>().unwrap();
+        let w = caps.get(4).unwrap().as_str().parse::<usize>().unwrap();
+        let h = caps.get(5).unwrap().as_str().parse::<usize>().unwrap();
 
-        Patch::new(0, x, y, w, h)
-    }
-
-    fn intersect(&self, other: &Patch) -> Patch {
-        let x1 = cmp::max(self.corners[0][0], other.corners[0][0]);
-        let y1 = cmp::max(self.corners[0][1], other.corners[0][1]);
-        let x2 = cmp::min(self.corners[1][0], other.corners[1][0]);
-        let y2 = cmp::min(self.corners[1][1], other.corners[1][1]);
-        Patch {
-            id: 0,
-            corners: [[x1, y1], [x2, y2]],
-        }
-    }
-
-    fn area(&self) -> u32 {
-        (self.corners[1][0] - self.corners[0][0]) * (self.corners[1][1] - self.corners[0][1])
+        Patch::new(id, x, y, w, h)
     }
 }
 
-fn main() {
-    let p = Patch::new(0, 0, 0, 1000, 1000);
-    let inputs = load_input().unwrap();
-    // let inputs = ["#1 @ 1,3: 4x4", "#2 @ 3,1: 4x4", "#3 @ 5,5: 2x2"];
-    let res = inputs
-        .iter()
-        .fold(0, |acc, x| cmp::max(acc, Patch::parse(x).corners[1][0]));
+fn intersect(p: &Patch, piece: &[[u8; 1000]; 1000]) -> bool {
+    for i in p.corners[0][1]..p.corners[1][1] {
+        for j in p.corners[0][0]..p.corners[1][0] {
+            if piece[i][j] > 1 {
+                return false;
+            }
+        }
+    }
+    true
+}
 
-    println!("area: {}", res);
+fn main() {
+    let mut piece: [[u8; 1000]; 1000] = [[0; 1000]; 1000];
+    let inputs = load_input().unwrap();
+    let mut area = 0;
+    let patches: Vec<Patch> = inputs.iter().map(|x| Patch::parse(x)).collect();
+    for p in patches.iter() {
+        for i in p.corners[0][1]..p.corners[1][1] {
+            for j in p.corners[0][0]..p.corners[1][0] {
+                if piece[i][j] == 1 {
+                    area += 1;
+                }
+                if piece[i][j] < 2 {
+                    piece[i][j] += 1;
+                }
+            }
+        }
+    }
+
+    println!("area: {}", area);
+
+    println!(
+        "id of non intersecting patch: {}",
+        patches.iter().find(|x| intersect(x, &piece)).unwrap().id
+    );
 }
