@@ -1,0 +1,9 @@
+[package]
+name = "puzzle03"
+version = "0.1.0"
+authors = ["Andrea Beconcini <andrea.beconcini@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+regex = "1"
+lazy_static = "1.2.0"
