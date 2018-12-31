@@ -57,7 +57,6 @@ impl fmt::Display for Action {
 }
 
 type Entry = (Time, Action);
-type Range = [u8; 2];
 
 fn parse_entry(s: &str) -> Entry {
     lazy_static! {
@@ -157,4 +156,11 @@ fn main() {
 
     let product = *id_max as u32 * minute_max as u32;
     println!("{} * {} = {}", id_max, minute_max, product);
+
+    let strat2 = map
+        .iter()
+        .map(|(k, v)| (k, v.iter().enumerate().max_by_key(|&(_, val)| val).unwrap()))
+        .max_by_key(|(_, val)| val.1)
+        .unwrap();
+    println!("{}", *strat2.0 as u32 * (strat2.1).0 as u32);
 }
